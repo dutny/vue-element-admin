@@ -15,6 +15,14 @@ const name = defaultSettings.title || 'vue Element Admin' // page title
 // port = 9527 npm run dev OR npm run dev --port = 9527
 const port = process.env.port || process.env.npm_config_port || 9527 // dev port
 
+// ssr 相关
+const VueSSRServerPlugin = require('vue-server-renderer/server-plugin')
+const VueSSRClientPlugin = require('vue-server-renderer/client-plugin')
+const nodeExternals = require('webpack-node-externals')
+const merge = require('lodash.merge')
+const TARGET_NODE = process.env.WEBPACK_TARGET === 'node'
+const target = TARGET_NODE ? 'server' : 'client'
+
 // All configuration item explanations can be find in https://cli.vuejs.org/config/
 module.exports = {
   /**
@@ -38,7 +46,27 @@ module.exports = {
     },
     before: require('./mock/mock-server.js')
   },
-  configureWebpack: {
+  css: {
+    extract: process.env.NODE_ENV === 'production'
+  },
+  configureWebpack: () => ({
+    // ssr
+    entry: `./ssr/entry-${target}.js`,
+    target: TARGET_NODE ? 'node' : 'web',
+    node: {
+      global: true
+    },
+    output: {
+      libraryTarget: TARGET_NODE ? 'commonjs2' : undefined
+    },
+    devtool: 'source-map',
+    externals: TARGET_NODE
+      ? nodeExternals({ allowlist: [/\.css$/] })
+      : undefined,
+    optimization: {
+      splitChunks: TARGET_NODE ? false : undefined
+    },
+    plugins: [TARGET_NODE ? new VueSSRServerPlugin() : new VueSSRClientPlugin()],
     // provide the app's title in webpack's name field, so that
     // it can be accessed in index.html to inject the correct title.
     name: name,
@@ -47,8 +75,16 @@ module.exports = {
         '@': resolve('src')
       }
     }
-  },
+  }),
   chainWebpack(config) {
+    config.module
+      .rule('vue')
+      .use('vue-loader')
+      .tap(options => {
+        merge(options, {
+          optimizeSSR: false
+        })
+      })
     // it can improve the speed of the first screen, it is recommended to turn on preload
     // it can improve the speed of the first screen, it is recommended to turn on preload
     config.plugin('preload').tap(() => [

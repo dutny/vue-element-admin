@@ -11,11 +11,11 @@ import enLang from 'element-ui/lib/locale/lang/en'// 如果使用中文语言包
 import '@/styles/index.scss' // global css
 
 import App from './App'
-import store from './store'
-import router from './router'
+import createStore from './store'
+import createRouter from './router'
 
 import './icons' // icon
-import './permission' // permission control
+import routerHook from './permission' // permission control
 import './utils/error-log' // error log
 
 import * as filters from './filters' // global filters
@@ -45,9 +45,18 @@ Object.keys(filters).forEach(key => {
 
 Vue.config.productionTip = false
 
-new Vue({
-  el: '#app',
-  router,
-  store,
-  render: h => h(App)
-})
+export function createApp() {
+  const router = createRouter()
+  const store = createStore()
+  routerHook(router)
+  const app = new Vue({
+    el: '#app',
+    router,
+    store,
+    render: h => h(App)
+  })
+  return {
+    app,
+    router
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "watch": [
+    "server/"
+  ],
+  "verborse": true,
+  "ignore": [],
+  "delay": "1000",
+  "exec": "npm run build:server && move dist\\vue-ssr-server-bundle.json bundle && npm run build:client && move bundle dist\\vue-ssr-server-bundle.json"
+}
